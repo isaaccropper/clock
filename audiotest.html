@@ -1,0 +1,55 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>audio test</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+  html,body{margin:0;height:100%;background:#000;color:#fff;font-family:monospace;overflow:hidden}
+  body{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+  #n{font-size:22vw;line-height:1;font-weight:700}
+  #s{font-size:5vw;margin-top:2vh}
+  #z{font-size:2.5vw;margin-top:3vh;opacity:.7}
+</style>
+</head>
+<body>
+<div id="n">0</div>
+<div id="s">SOUND: STARTING</div>
+<div id="z"></div>
+<script>
+var AC = window.AudioContext || window.webkitAudioContext;
+var ctx = null, n = 0, tapped = false;
+try { ctx = new AC(); } catch (e) {}
+
+function beep(high) {
+  if (!ctx || ctx.state !== 'running') return;
+  var o = ctx.createOscillator(), g = ctx.createGain(), t = ctx.currentTime;
+  o.type = 'sine';
+  o.frequency.value = high ? 880 : 440;
+  g.gain.setValueAtTime(0, t);
+  g.gain.linearRampToValueAtTime(0.5, t + 0.01);
+  g.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
+  o.connect(g); g.connect(ctx.destination);
+  o.start(t); o.stop(t + 0.35);
+}
+function show() {
+  var st = !ctx ? 'NOT SUPPORTED' : ctx.state === 'running' ? (tapped ? 'RUNNING (AFTER A TAP)' : 'RUNNING') : 'BLOCKED';
+  document.getElementById('s').textContent = 'SOUND: ' + st;
+  document.getElementById('z').textContent = 'PAGE SIZE ' + innerWidth + ' x ' + innerHeight + '  @' + devicePixelRatio;
+}
+function unlock() {
+  if (ctx && ctx.state !== 'running') { tapped = true; ctx.resume(); }
+}
+['pointerdown', 'keydown', 'touchstart'].forEach(function (e) { addEventListener(e, unlock); });
+
+setInterval(function () {
+  n++;
+  document.getElementById('n').textContent = n;
+  if (ctx && ctx.state !== 'running' && !tapped) ctx.resume().catch(function () {});
+  beep(n % 5 === 0);
+  show();
+}, 1000);
+show();
+</script>
+</body>
+</html>
